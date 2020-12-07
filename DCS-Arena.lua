@@ -2,8 +2,8 @@ SupportHandler = EVENTHANDLER:New()
 
 UnitNr = 1
 
-BlueTickets = 400
-RedTickets = 400
+BlueCredits = 400
+RedCredits = 400
 
 SpawnTimerLimit = 900
 
@@ -181,30 +181,31 @@ end
 
 function SpawnUnitCheck(coord, coalition, text)
 	Unitcost = UnitTable[text]
-	if timer.getAbsTime() < SpawnTimerLimit then
+	MissionTimer = timer.getAbsTime() - env.mission.start_time
+	if MissionTimer < SpawnTimerLimit then
 		if Unitcost ~= nil then	
 			if coalition == 1 then
-				Tickets = RedTickets
+				Credits = RedCredits
 			elseif coalition == 2 then
-				Tickets = BlueTickets
+				Credits = BlueCredits
 			end
 				
-			if Tickets < Unitcost then
-				MessageAll = MESSAGE:New( "Onvoldoende Tickets!",  25):ToCoalition(coalition)
+			if Credits < Unitcost then
+				MessageAll = MESSAGE:New( "Onvoldoende Credits!",  25):ToCoalition(coalition)
 			else
 				
-				Tickets = Tickets - Unitcost
+				Credits = Credits - Unitcost
 				if coalition == 2 then
-					BlueTickets = Tickets
+					BlueCredits = Credits
 				elseif coalition == 1 then
-					RedTickets = Tickets
+					RedCredits = Credits
 				end
 				
 				SpawnUnit(coord, coalition, text)
 				
-				MessageAll = MESSAGE:New( "Tickets: "..Tickets,  25):ToCoalition(coalition)
+				MessageAll = MESSAGE:New( "Credits: "..Credits,  25):ToCoalition(coalition)
 				MessageAll = MESSAGE:New( "Unitcost: "..Unitcost,  25):ToCoalition(coalition)
-				MessageAll = MESSAGE:New( Tickets.." Tickets over",  25):ToCoalition(coalition)
+				MessageAll = MESSAGE:New( Credits.." Credits over",  25):ToCoalition(coalition)
 			end
 		else
 			MessageAll = MESSAGE:New( "Ongeldige Unit!",  25):ToCoalition(coalition)
@@ -242,12 +243,12 @@ function BirthDetected(Event)
 		local initiator_coalition = Event.IniCoalition
 		local initiator_cost = ClientCost[initiator_type]
 		if initiator_coalition == 1 then
-			RedTickets = RedTickets - initiator_cost
+			RedCredits = RedCredits - initiator_cost
 		elseif initiator_coalition ==2 then
-			BlueTickets = BlueTickets - initiator_cost
+			BlueCredits = BlueCredits - initiator_cost
 		end
 		env.info("New Player: " .. initiator .. ", Type: ".. initiator_type.. ", Cost: ".. initiator_cost.. ", Coalition: ".. initiator_coalition)
-		MessageAll = MESSAGE:New( "Tickets remaining: " .. BlueTickets,  25):ToAll()
+		MessageAll = MESSAGE:New( "Credits remaining: " .. BlueCredits,  25):ToAll()
 	end
 end
 
@@ -255,17 +256,17 @@ function KillDetected(Event)
 	local targetType = Event.TgtTypeName
 	local targetCoalition = Event.TgtCoalition
 	if ClientCost[targetType] ~= nil then
-		local TicketsEarned = ClientCost[targetType]
+		local CreditsEarned = ClientCost[targetType]
 		if targetCoalition == 1 then
-			RedTickets = RedTickets + TicketsEarned
+			RedCredits = RedCredits + CreditsEarned
 		elseif targetCoalition ==2 then
-			BlueTickets = BlueTickets + TicketsEarned
+			BlueCredits = BlueCredits + CreditsEarned
 		end
 	else
 		if targetCoalition == 1 then
-			RedTickets = RedTickets + 2
+			RedCredits = RedCredits + 2
 		elseif targetCoalition ==2 then
-			BlueTickets = BlueTickets + 2
+			BlueCredits = BlueCredits + 2
 		end
 	end
 end
