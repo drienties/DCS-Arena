@@ -44,8 +44,18 @@ LogisticsTable = {}
 LogisticsClientSet = SET_CLIENT:New():FilterPrefixes("Transport"):FilterStart()
 GroundUnitsSet = SET_UNIT:New():FilterCategories("ground"):FilterStart()
 
+
+
 BlueHQ = math.random (5)
 RedHQ = math.random (5)
+
+function showCredits(coalition)
+	if coalition == 1 then 
+		MessageAll = MESSAGE:New( "Available credits: "..RedCredits,  25):ToAll()
+	elseif coalition == 2 then
+		MessageAll = MESSAGE:New( "Available credits: "..BlueCredits,  25):ToAll()
+	end
+end
 
 function SpawnHq(BlueHQ, RedHQ)
 	for i = 1, 2, 1
@@ -301,5 +311,12 @@ function SupportHandler:onEvent(Event)
 		--landing detected
     end
 end
+
+
+--Menu Stuff
+local MenuCoalitionRed = MENU_COALITION:New( coalition.side.RED, "Manage Credits" )
+local MenuCoalitionBlue = MENU_COALITION:New( coalition.side.BLUE, "Manage Credits" )
+local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "Show Available Credits", MenuCoalitionBlue, showCredits("1") )
+local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.RED, "Show Available Credits", MenuCoalitionRed, showCredits("2") )
 
 world.addEventHandler(SupportHandler)
