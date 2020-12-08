@@ -71,8 +71,8 @@ end
 --Menu Stuff
 local MenuCoalitionRed = MENU_COALITION:New( coalition.side.RED, "Manage Credits" )
 local MenuCoalitionBlue = MENU_COALITION:New( coalition.side.BLUE, "Manage Credits" )
-local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "Show Available Credits", MenuCoalitionBlue, showCredits, "2" )
-local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.RED, "Show Available Credits", MenuCoalitionRed, showCredits, "1" )
+local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "Show Available Credits", MenuCoalitionBlue, showCredits, 2 )
+local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.RED, "Show Available Credits", MenuCoalitionRed, showCredits, 1 )
 
 function SpawnHq(BlueHQ, RedHQ)
 	for i = 1, 2, 1
