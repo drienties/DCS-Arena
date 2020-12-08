@@ -3,7 +3,10 @@ SupportHandler = EVENTHANDLER:New()
 UnitNr = 1
 
 BlueCredits = 400
+BlueReservedCredits =0
 RedCredits = 400
+RedReservedCredits = 0
+
 
 SpawnTimerLimit = 900
 
@@ -44,12 +47,17 @@ LogisticsTable = {}
 LogisticsClientSet = SET_CLIENT:New():FilterPrefixes("Transport"):FilterStart()
 GroundUnitsSet = SET_UNIT:New():FilterCategories("ground"):FilterStart()
 
+--enable SSB flag
+--trigger.action.setUserFlag("SSB",100)
+--trigger.action.setUserFlag("F-14A Blue-1",100)
 
 
-BlueHQ = math.random (5)
-RedHQ = math.random (5)
+
+BlueHQ = math.random (17)
+RedHQ = math.random (17)
 
 function showCredits(coalition)
+	env.info(coalition)
 	if coalition == 1 then 
 		MessageAll = MESSAGE:New( "Available credits: "..RedCredits,  25):ToAll()
 	elseif coalition == 2 then
@@ -57,15 +65,21 @@ function showCredits(coalition)
 	end
 end
 
+--Menu Stuff
+local MenuCoalitionRed = MENU_COALITION:New( coalition.side.RED, "Manage Credits" )
+local MenuCoalitionBlue = MENU_COALITION:New( coalition.side.BLUE, "Manage Credits" )
+local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "Show Available Credits", MenuCoalitionBlue, showCredits, "2" )
+local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.RED, "Show Available Credits", MenuCoalitionRed, showCredits, "1" )
+
 function SpawnHq(BlueHQ, RedHQ)
 	for i = 1, 2, 1
 		do
 			if i == 1 then
-				HQZone = "R"..RedHQ
+				HQZone = "r"..RedHQ
 				HQName = "Red HQ"
 				HQCountry = country.id.RUSSIA
 			elseif i == 2 then
-				HQZone = "B"..BlueHQ
+				HQZone = "b"..BlueHQ
 				HQName = "Blue HQ"
 				HQCountry = country.id.USA
 			end
@@ -83,9 +97,14 @@ local MissionSchedule = SCHEDULER:New( nil,
 	--disabled for now
 	--ResupplyScheduleCheck()
 	SupplyCrateLoad(2)
+	CreditCheck()
 	--CheckUnitsNearHQ()
   end, {}, 1, 10
   )
+
+function CreditCheck()
+
+end
 
 function CheckUnitsNearHQ()
 	for i = 1, 2, 1
@@ -204,6 +223,9 @@ function SpawnUnitCheck(coord, coalition, text)
 				MessageAll = MESSAGE:New( "Onvoldoende Credits!",  25):ToCoalition(coalition)
 			else
 				
+				MessageAll = MESSAGE:New( "Credits: "..Credits,  25):ToCoalition(coalition)
+				env.info("Credit Log: ".. ReturnCoalitionName(coalition) .." Credits: ".. Credits)
+
 				Credits = Credits - Unitcost
 				if coalition == 2 then
 					BlueCredits = Credits
@@ -212,10 +234,12 @@ function SpawnUnitCheck(coord, coalition, text)
 				end
 				
 				SpawnUnit(coord, coalition, text)
-				
-				MessageAll = MESSAGE:New( "Credits: "..Credits,  25):ToCoalition(coalition)
+
 				MessageAll = MESSAGE:New( "Unitcost: "..Unitcost,  25):ToCoalition(coalition)
+				env.info("Credit Log: ".. ReturnCoalitionName(coalition) .." spawning a unit for : ".. Unitcost)
+
 				MessageAll = MESSAGE:New( Credits.." Credits over",  25):ToCoalition(coalition)
+				env.info("Credit Log: ".. ReturnCoalitionName(coalition) .." Credits over: ".. Credits)
 			end
 		else
 			MessageAll = MESSAGE:New( "Ongeldige Unit!",  25):ToCoalition(coalition)
@@ -253,12 +277,15 @@ function BirthDetected(Event)
 		local initiator_coalition = Event.IniCoalition
 		local initiator_cost = ClientCost[initiator_type]
 		if initiator_coalition == 1 then
-			RedCredits = RedCredits - initiator_cost
+			env.info("Credit Log: Red Credits: ".. RedCredits)
+			RedReservedCredits = RedReservedCredits + initiator_cost
+			env.info("Credit Log: Red Credits: ".. RedCredits .. " Reserved: ".. RedReservedCredits)
 		elseif initiator_coalition ==2 then
-			BlueCredits = BlueCredits - initiator_cost
+			env.info("Credit Log: Blue Credits: ".. BlueCredits)
+			BlueReservedCredits = BlueReservedCredits + initiator_cost
+			env.info("Credit Log: Blue Credits: ".. BlueCredits .. " Reserved: ".. BlueReservedCredits)
 		end
 		env.info("New Player: " .. initiator .. ", Type: ".. initiator_type.. ", Cost: ".. initiator_cost.. ", Coalition: ".. initiator_coalition)
-		MessageAll = MESSAGE:New( "Credits remaining: " .. BlueCredits,  25):ToAll()
 	end
 end
 
@@ -290,6 +317,49 @@ function DeadObjectDetected(Event)
 	end
 end
 
+function TakeOffEvent(Event)
+	if Event.initiator ~= nil then
+		env.info("Player Takeoff detected")
+		local initiator = Event.initiator:getName()
+		local client = CLIENT:FindByName(initiator)
+		local coalition = client:GetCoalition()
+		if coalition == 1 then
+			env.info("Credit Log: Red Credits: ".. RedCredits .. " Deducted: ".. RedReservedCredits)
+			RedCredits = RedCredits - RedReservedCredits
+			env.info("Credit Log: Red Credits: ".. RedCredits)
+		elseif coalition ==2 then
+			env.info("Credit Log: Blue Credits: ".. BlueCredits .. " Deducted: ".. BlueReservedCredits)
+			BlueCredits = BlueCredits - BlueReservedCredits
+			env.info("Credit Log: Blue Credits: ".. BlueCredits)
+		end
+	end
+	MessageAll = MESSAGE:New( "Takeoff!!",  100):ToAll()
+end
+
+function LandingEvent(Event)
+	if Event.initiator ~= nil then
+		env.info("Player landing detected")
+		local initiator = Event.initiator:getName()
+		local client = CLIENT:FindByName(initiator)
+		local clientType = client:GetTypeName()
+		local clientCoalition = client:GetCoalition()
+		local clientCost = ClientCost[clientType]
+		if clientCoalition == 1 then
+			env.info("Credit Log: Red Credits: ".. RedCredits .. " Returned: ".. clientCost)
+			RedCredits = RedCredits + clientCost
+			env.info("Credit Log: Red Credits: ".. RedCredits)
+		elseif clientCoalition == 2 then
+			env.info("Credit Log: Blue Credits: ".. BlueCredits .. " Returned: ".. clientCost)
+			BlueCredits = BlueCredits + clientCost
+			env.info("Credit Log: Blue Credits: ".. BlueCredits)
+		end
+		env.info("player in: ".. clientType .. " landed" )
+		--local location = Event.PlaceName
+
+	end
+	MessageAll = MESSAGE:New( "Landing",  100):ToAll()
+end
+
 function SupportHandler:onEvent(Event)
     if Event.id == world.event.S_EVENT_MARK_ADDED then
         -- env.info(string.format("BTI: Support got event ADDED id %s idx %s coalition %s group %s text %s", Event.id, Event.idx, Event.coalition, Event.groupID, Event.text))
@@ -309,14 +379,15 @@ function SupportHandler:onEvent(Event)
 		DeadObjectDetected(Event)
 	elseif Event.id == world.event.S_EVENT_LAND then
 		--landing detected
+		LandingEvent(Event)
+    elseif Event.id == world.event.S_EVENT_TAKEOFF then
+		--landing detected
+		TakeOffEvent(Event)
+		
     end
 end
 
 
---Menu Stuff
-local MenuCoalitionRed = MENU_COALITION:New( coalition.side.RED, "Manage Credits" )
-local MenuCoalitionBlue = MENU_COALITION:New( coalition.side.BLUE, "Manage Credits" )
-local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "Show Available Credits", MenuCoalitionBlue, showCredits("1") )
-local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.RED, "Show Available Credits", MenuCoalitionRed, showCredits("2") )
+
 
 world.addEventHandler(SupportHandler)
