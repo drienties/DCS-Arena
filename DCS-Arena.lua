@@ -87,7 +87,7 @@ function SpawnHq(BlueHQ, RedHQ)
 				HQCountry = country.id.USA
 			end
 			
-			local HQSpawnBuilding = SPAWNSTATIC:NewFromType("Shelter", "Structures", HQCountry)
+			local HQSpawnBuilding = SPAWNSTATIC:NewFromType("ComCenter", "Structures", HQCountry)
 			local Zone = ZONE:FindByName( HQZone)
 			local HQBuilding = HQSpawnBuilding:SpawnFromZone(Zone, 0, HQName )
 		end
