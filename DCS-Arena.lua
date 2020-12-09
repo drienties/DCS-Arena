@@ -2,11 +2,11 @@ SupportHandler = EVENTHANDLER:New()
 
 UnitNr = 1
 
-BlueCredits = 400
-BlueReservedCredits =0
+BlueCredits = 4
 RedCredits = 400
-RedReservedCredits = 0
 
+BlueSpawnZoneName = "spawnzoneblue"
+RedSpawnZoneName = "spawnzonered"
 
 SpawnTimerLimit = 900
 
@@ -15,7 +15,7 @@ Samresupplytimer = 6000
 UnitTable = {}
 
 UnitTable["tank"] = 10		-- MBT
-UnitTable["artillery"] = 10		-- Artillery
+UnitTable["artillery"] = 10	-- Artillery
 UnitTable["aaa"] = 10		-- aaa 
 UnitTable["samsr"] = 20 	-- short range Sa-6 / Hawk
 UnitTable["sampd"] = 20		-- sam-point defence Sa-15 / Roland
@@ -49,12 +49,7 @@ LogisticsTable = {}
 
 LogisticsClientSet = SET_CLIENT:New():FilterPrefixes("Transport"):FilterStart()
 GroundUnitsSet = SET_UNIT:New():FilterCategories("ground"):FilterStart()
-
---enable SSB flag
---trigger.action.setUserFlag("SSB",100)
---trigger.action.setUserFlag("F-14A Blue-1",100)
-
-
+ClientSet = SET_CLIENT:New():FilterStart()
 
 BlueHQ = math.random (17)
 RedHQ = math.random (17)
@@ -92,7 +87,7 @@ function SpawnHq(BlueHQ, RedHQ)
 			local HQBuilding = HQSpawnBuilding:SpawnFromZone(Zone, 0, HQName )
 		end
 end
---spawn HQ on 1 of 5 zones
+
 SpawnHq(BlueHQ, RedHQ)
 
 local MissionSchedule = SCHEDULER:New( nil, 
@@ -100,14 +95,10 @@ local MissionSchedule = SCHEDULER:New( nil,
 	--disabled for now
 	--ResupplyScheduleCheck()
 	SupplyCrateLoad(2)
-	CreditCheck()
+	--CreditCheck()
 	--CheckUnitsNearHQ()
   end, {}, 1, 10
   )
-
-function CreditCheck()
-
-end
 
 function CheckUnitsNearHQ()
 	for i = 1, 2, 1
@@ -214,41 +205,56 @@ end
 function SpawnUnitCheck(coord, coalition, text)
 	Unitcost = UnitTable[text]
 	MissionTimer = timer.getAbsTime() - env.mission.start_time
-	if MissionTimer < SpawnTimerLimit then
-		if Unitcost ~= nil then	
-			if coalition == 1 then
-				Credits = RedCredits
-			elseif coalition == 2 then
-				Credits = BlueCredits
-			end
-				
-			if Credits < Unitcost then
-				MessageAll = MESSAGE:New( "Onvoldoende Credits!",  25):ToCoalition(coalition)
-			else
-				
-				MessageAll = MESSAGE:New( "Credits: "..Credits,  25):ToCoalition(coalition)
-				env.info("Credit Log: ".. ReturnCoalitionName(coalition) .." Credits: ".. Credits)
 
-				Credits = Credits - Unitcost
-				if coalition == 2 then
-					BlueCredits = Credits
-				elseif coalition == 1 then
-					RedCredits = Credits
+	if coalition == 1 then
+		SpawnZone = ZONE:FindByName( RedSpawnZoneName )
+	elseif coalition ==2 then
+		SpawnZone = ZONE:FindByName( BlueSpawnZoneName )
+	end
+
+	if text ~= "jtac" and text ~= "awacs" then
+		if coord:IsInRadius(SpawnZone:GetCoordinate(), SpawnZone:GetRadius()) then
+			if MissionTimer < SpawnTimerLimit then
+				if Unitcost ~= nil then	
+					if coalition == 1 then
+						Credits = RedCredits
+					elseif coalition == 2 then
+						Credits = BlueCredits
+					end
+						
+					if Credits < Unitcost then
+						MessageAll = MESSAGE:New( "Onvoldoende Credits!",  25):ToCoalition(coalition)
+					else
+						
+						MessageAll = MESSAGE:New( "Credits: "..Credits,  25):ToCoalition(coalition)
+						env.info("Credit Log: ".. ReturnCoalitionName(coalition) .." Credits: ".. Credits)
+
+						Credits = Credits - Unitcost
+						if coalition == 2 then
+							BlueCredits = Credits
+						elseif coalition == 1 then
+							RedCredits = Credits
+						end
+						
+						SpawnUnit(coord, coalition, text)
+
+						MessageAll = MESSAGE:New( "Unitcost: "..Unitcost,  25):ToCoalition(coalition)
+						env.info("Credit Log: ".. ReturnCoalitionName(coalition) .." spawning a unit for : ".. Unitcost)
+
+						MessageAll = MESSAGE:New( Credits.." Credits over",  25):ToCoalition(coalition)
+						env.info("Credit Log: ".. ReturnCoalitionName(coalition) .." Credits over: ".. Credits)
+					end
+				else
+					MessageAll = MESSAGE:New( "Ongeldige Unit!",  25):ToCoalition(coalition)
 				end
-				
-				SpawnUnit(coord, coalition, text)
-
-				MessageAll = MESSAGE:New( "Unitcost: "..Unitcost,  25):ToCoalition(coalition)
-				env.info("Credit Log: ".. ReturnCoalitionName(coalition) .." spawning a unit for : ".. Unitcost)
-
-				MessageAll = MESSAGE:New( Credits.." Credits over",  25):ToCoalition(coalition)
-				env.info("Credit Log: ".. ReturnCoalitionName(coalition) .." Credits over: ".. Credits)
+			else
+				MessageAll = MESSAGE:New( "Instant spawn placement timer expired!",  25):ToCoalition(coalition)
 			end
 		else
-			MessageAll = MESSAGE:New( "Ongeldige Unit!",  25):ToCoalition(coalition)
+			MessageAll = MESSAGE:New( "Units in eigen zone plaatsen!",  25):ToCoalition(coalition)
 		end
 	else
-		MessageAll = MESSAGE:New( "Instant spawn placement timer expired!",  25):ToCoalition(coalition)
+		--awacs/jtac code invoegen
 	end
 end
 
@@ -280,13 +286,17 @@ function BirthDetected(Event)
 		local initiator_coalition = Event.IniCoalition
 		local initiator_cost = ClientCost[initiator_type]
 		if initiator_coalition == 1 then
-			env.info("Credit Log: Red Credits: ".. RedCredits)
-			RedReservedCredits = RedReservedCredits + initiator_cost
-			env.info("Credit Log: Red Credits: ".. RedCredits .. " Reserved: ".. RedReservedCredits)
+			if initiator_cost > RedCredits then
+				MessageAll = MESSAGE:New( "Te weinig credits voor dit vliegtuig",  25):ToCoalition(initiator_coalition)
+			else
+				env.info("Credit Log: Red Credits: ".. RedCredits)
+			end
 		elseif initiator_coalition ==2 then
-			env.info("Credit Log: Blue Credits: ".. BlueCredits)
-			BlueReservedCredits = BlueReservedCredits + initiator_cost
-			env.info("Credit Log: Blue Credits: ".. BlueCredits .. " Reserved: ".. BlueReservedCredits)
+			if initiator_cost > BlueCredits then
+				MessageAll = MESSAGE:New( "Te weinig credits voor dit vliegtuig",  25):ToCoalition(initiator_coalition)
+			else
+				env.info("Credit Log: Blue Credits: ".. BlueCredits)
+			end
 		end
 		env.info("New Player: " .. initiator .. ", Type: ".. initiator_type.. ", Cost: ".. initiator_cost.. ", Coalition: ".. initiator_coalition)
 	end
@@ -325,14 +335,23 @@ function TakeOffEvent(Event)
 		env.info("Player Takeoff detected")
 		local initiator = Event.initiator:getName()
 		local client = CLIENT:FindByName(initiator)
+		local clientType = client:GetTypeName()
 		local coalition = client:GetCoalition()
+		local clientCost = ClientCost[clientType]
+
 		if coalition == 1 then
-			env.info("Credit Log: Red Credits: ".. RedCredits .. " Deducted: ".. RedReservedCredits)
-			RedCredits = RedCredits - RedReservedCredits
+			env.info("Credit Log: Red Credits: ".. RedCredits .. " Deducted: ".. clientCost)
+			
+			
+
+			RedCredits = RedCredits - clientCost
 			env.info("Credit Log: Red Credits: ".. RedCredits)
 		elseif coalition ==2 then
-			env.info("Credit Log: Blue Credits: ".. BlueCredits .. " Deducted: ".. BlueReservedCredits)
-			BlueCredits = BlueCredits - BlueReservedCredits
+			env.info("Credit Log: Blue Credits: ".. BlueCredits .. " Deducted: ".. clientCost)
+			
+
+
+			BlueCredits = BlueCredits - clientCost
 			env.info("Credit Log: Blue Credits: ".. BlueCredits)
 		end
 	end
