@@ -356,13 +356,14 @@ function EventHandlerTakeoff:OnEventTakeoff(Event)
 		local coalition = client:GetCoalition()
 		local clientCost = ClientCost[clientType]
 		local clientLocation = Event.PlaceName
+		local airbaseCoalition = AIRBASE:FindByName(clientLocation):GetCoalition()
 
-		if coalition == 1 then
+		if coalition == 1 and airbaseCoalition == 1 then
 			env.info("Credit Log: Red Credits: ".. RedCredits .. " Deducted: ".. clientCost)
 			RedCredits = RedCredits - clientCost
 			env.info("Credit Log: Red Credits: ".. RedCredits)
 			MessageAll = MESSAGE:New( "Takeoff from ".. clientLocation,  100):ToCoalition(coalition)
-		elseif coalition ==2 then
+		elseif coalition == 2  and airbaseCoalition == 2 then
 			env.info("Credit Log: Blue Credits: ".. BlueCredits .. " Deducted: ".. clientCost)
 			BlueCredits = BlueCredits - clientCost
 			env.info("Credit Log: Blue Credits: ".. BlueCredits)
@@ -379,11 +380,14 @@ function EventHandlerLand:OnEventLand(Event)
 		local clientType = client:GetTypeName()
 		local clientCoalition = client:GetCoalition()
 		local clientCost = ClientCost[clientType]
-		if clientCoalition == 1 then
+		local clientLocation = Event.PlaceName
+		local airbaseCoalition = AIRBASE:FindByName(clientLocation):GetCoalition()
+
+		if clientCoalition == 1 and airbaseCoalition == 1 then
 			env.info("Credit Log: Red Credits: ".. RedCredits .. " Returned: ".. clientCost)
 			RedCredits = RedCredits + clientCost
 			env.info("Credit Log: Red Credits: ".. RedCredits)
-		elseif clientCoalition == 2 then
+		elseif clientCoalition == 2 and airbaseCoalition == 2 then
 			env.info("Credit Log: Blue Credits: ".. BlueCredits .. " Returned: ".. clientCost)
 			BlueCredits = BlueCredits + clientCost
 			env.info("Credit Log: Blue Credits: ".. BlueCredits)
