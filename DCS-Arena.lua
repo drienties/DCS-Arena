@@ -97,7 +97,7 @@ end
 
 SpawnHq(BlueHQ, RedHQ)
 
-local MissionSchedule = SCHEDULER:New( nil, 
+local MissionSchedule10Sec = SCHEDULER:New( nil, 
   function()
 	--disabled for now
 	--ResupplyScheduleCheck()
@@ -106,6 +106,19 @@ local MissionSchedule = SCHEDULER:New( nil,
 	--CheckUnitsNearHQ()
   end, {}, 1, 10
   )
+
+local MissionSchedule10Min = SCHEDULER:New( nil, 
+  function()
+	StatusUpdate()
+  end, {}, 1, 600
+  )
+
+function StatusUpdate()
+	MessageAll = MESSAGE:New( "Status Update:", 25):ToAll()
+	MessageAll = MESSAGE:New( "Credits Red: "..RedCredits,  25):ToAll()
+	MessageAll = MESSAGE:New( "Credits Blue: "..BlueCredits,  25):ToAll()
+end
+
 
 function CheckUnitsNearHQ()
 	for i = 1, 2, 1
