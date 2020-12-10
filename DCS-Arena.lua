@@ -30,25 +30,34 @@ UnitTable["samlr"] = 40 	-- long range S300 / Patriot
 
 ClientCost = {}
 
+ClientCost["A-10A"] = 5
+ClientCost["A-10C"] = 5
 ClientCost["A-10C_2"] = 5
-ClientCost["Su-25T"] = 5
-ClientCost["FA-18C_hornet"] = 5
-ClientCost["MiG-29A"] = 5
-ClientCost["MiG-21Bis"] = 5
-ClientCost["JF-17"] = 5
-ClientCost["L-39ZA"] = 2
-ClientCost["M-2000C"] = 5
-ClientCost["TF-51D"] = 1
 ClientCost["AJS37"] = 5
 ClientCost["AV8BNA"] = 5
 ClientCost["C-101CC"] = 2
+ClientCost["C-101EB"] = 1
 ClientCost["F-14A-135-GR"] = 5
 ClientCost["F-14B"] = 5
 ClientCost["F-15C"] = 4
 ClientCost["F-16C_50"] = 5
 ClientCost["F-5E-3"] = 3
+ClientCost["FA-18C_hornet"] = 5
+ClientCost["L-39C"] = 1
+ClientCost["L-39ZA"] = 2
+ClientCost["M-2000C"] = 5
+ClientCost["MiG-21Bis"] = 5
+ClientCost["MiG-29A"] = 5
+ClientCost["MiG-29G"] = 5
+ClientCost["MiG-29S"] = 5
+ClientCost["Su-25"] = 5
+ClientCost["Su-25T"] = 5
+ClientCost["Su-33"] = 5
+ClientCost["JF-17"] = 5
+ClientCost["TF-51D"] = 1
 ClientCost["UH-1H"] = 2
 ClientCost["Mi-8MT"] = 2
+ClientCost["KA-50"] = 4
 
 ActiveUnits = {}
 
