@@ -1,9 +1,16 @@
 SupportHandler = EVENTHANDLER:New()
+EventHandlerKill = EVENTHANDLER:New():HandleEvent( EVENTS.Kill )
+EventHandlerBirth = EVENTHANDLER:New():HandleEvent( EVENTS.Birth )
+EventHandlerLand = EVENTHANDLER:New():HandleEvent( EVENTS.Land )
+EventHandlerTakeoff = EVENTHANDLER:New():HandleEvent( EVENTS.Takeoff )
+EventHandlerDead = EVENTHANDLER:New():HandleEvent( EVENTS.Dead )
 
 UnitNr = 1
 
-BlueCredits = 4
+BlueCredits = 400
 RedCredits = 400
+
+CreditsUnknownUnit = 1
 
 BlueSpawnZoneName = "spawnzoneblue"
 RedSpawnZoneName = "spawnzonered"
@@ -57,9 +64,9 @@ RedHQ = math.random (17)
 function showCredits(coalition)
 	env.info(coalition)
 	if coalition == 1 then 
-		MessageAll = MESSAGE:New( "Available credits: "..RedCredits,  25):ToAll()
+		MessageAll = MESSAGE:New( "Available credits: "..RedCredits,  25):ToCoalition(coalition)
 	elseif coalition == 2 then
-		MessageAll = MESSAGE:New( "Available credits: "..BlueCredits,  25):ToAll()
+		MessageAll = MESSAGE:New( "Available credits: "..BlueCredits,  25):ToCoalition(coalition)
 	end
 end
 
@@ -278,7 +285,7 @@ function MarkRemoved(Event)
     end
 end
 
-function BirthDetected(Event)
+function EventHandlerBirth:OnEventBirth(Event)
 	env.info("Birth Detected")
 	if Event.IniPlayerName ~= nil then
 		local initiator = Event.IniPlayerName
@@ -298,30 +305,41 @@ function BirthDetected(Event)
 				env.info("Credit Log: Blue Credits: ".. BlueCredits)
 			end
 		end
-		env.info("New Player: " .. initiator .. ", Type: ".. initiator_type.. ", Cost: ".. initiator_cost.. ", Coalition: ".. initiator_coalition)
+		env.info("Credit Log: New Player: " .. initiator .. ", Type: ".. initiator_type.. ", Cost: ".. initiator_cost.. ", Coalition: ".. initiator_coalition)
 	end
 end
 
-function KillDetected(Event)
+function EventHandlerKill:OnEventKill(Event)
+	
 	local targetType = Event.TgtTypeName
 	local targetCoalition = Event.TgtCoalition
+	
 	if ClientCost[targetType] ~= nil then
 		local CreditsEarned = ClientCost[targetType]
-		if targetCoalition == 1 then
+		if targetCoalition == 2 then
+			env.info("Credit Log: Red Credits: ".. RedCredits)
 			RedCredits = RedCredits + CreditsEarned
-		elseif targetCoalition ==2 then
+			env.info("Credit Log: Red Credits gained: ".. CreditsEarned .. " New Total: ".. RedCredits)
+		elseif targetCoalition == 1 then
+			env.info("Credit Log: Blue Credits: ".. BlueCredits)
 			BlueCredits = BlueCredits + CreditsEarned
+			env.info("Credit Log: Blue Credits gained: ".. CreditsEarned .. " New Total: ".. BlueCredits)
 		end
 	else
-		if targetCoalition == 1 then
-			RedCredits = RedCredits + 2
-		elseif targetCoalition ==2 then
-			BlueCredits = BlueCredits + 2
+		CreditsEarned = CreditsUnknownUnit
+		if targetCoalition == 2 then
+			env.info("Credit Log: Red Credits: ".. RedCredits)
+			RedCredits = RedCredits + CreditsEarned
+			env.info("Credit Log: Red Credits gained: ".. CreditsEarned .. " New Total: ".. RedCredits)
+		elseif targetCoalition == 1 then
+			env.info("Credit Log: Blue Credits: ".. BlueCredits)
+			BlueCredits = BlueCredits + CreditsEarned
+			env.info("Credit Log: Blue Credits gained: ".. CreditsEarned .. " New Total: ".. BlueCredits)
 		end
 	end
 end
 
-function DeadObjectDetected(Event)
+function EventHandlerDead:OnEventDead(Event)
 	local DeadObject = Event.IniUnitName
 	if DeadObject == "Blue HQ" then
 		MessageAll = MESSAGE:New( DeadObject.." is destroyed",  100):ToAll()
@@ -330,37 +348,32 @@ function DeadObjectDetected(Event)
 	end
 end
 
-function TakeOffEvent(Event)
+function EventHandlerTakeoff:OnEventTakeoff(Event)
 	if Event.initiator ~= nil then
-		env.info("Player Takeoff detected")
-		local initiator = Event.initiator:getName()
+		local initiator = Event.IniGroupName
 		local client = CLIENT:FindByName(initiator)
 		local clientType = client:GetTypeName()
 		local coalition = client:GetCoalition()
 		local clientCost = ClientCost[clientType]
+		local clientLocation = Event.PlaceName
 
 		if coalition == 1 then
 			env.info("Credit Log: Red Credits: ".. RedCredits .. " Deducted: ".. clientCost)
-			
-			
-
 			RedCredits = RedCredits - clientCost
 			env.info("Credit Log: Red Credits: ".. RedCredits)
+			MessageAll = MESSAGE:New( "Takeoff from ".. clientLocation,  100):ToCoalition(coalition)
 		elseif coalition ==2 then
 			env.info("Credit Log: Blue Credits: ".. BlueCredits .. " Deducted: ".. clientCost)
-			
-
-
 			BlueCredits = BlueCredits - clientCost
 			env.info("Credit Log: Blue Credits: ".. BlueCredits)
+			MessageAll = MESSAGE:New( "Takeoff from ".. clientLocation,  100):ToCoalition(coalition)
 		end
 	end
-	MessageAll = MESSAGE:New( "Takeoff!!",  100):ToAll()
+	
 end
 
-function LandingEvent(Event)
+function EventHandlerLand:OnEventLand(Event)
 	if Event.initiator ~= nil then
-		env.info("Player landing detected")
 		local initiator = Event.initiator:getName()
 		local client = CLIENT:FindByName(initiator)
 		local clientType = client:GetTypeName()
@@ -390,26 +403,8 @@ function SupportHandler:onEvent(Event)
     elseif Event.id == world.event.S_EVENT_MARK_REMOVED then
         -- env.info(string.format("BTI: Support got event REMOVED id %s idx %s coalition %s group %s text %s", Event.id, Event.idx, Event.coalition, Event.groupID, Event.text))
 		MarkRemoved(Event)
-	elseif Event.id == world.event.S_EVENT_BIRTH then
-		--birth detected
-		BirthDetected(Event)
-	elseif Event.id == world.event.S_EVENT_KILL then
-		--death detected
-		--KillDetected(Event)
-	elseif Event.id == world.event.S_EVENT_DEAD then
-		--death detected
-		DeadObjectDetected(Event)
-	elseif Event.id == world.event.S_EVENT_LAND then
-		--landing detected
-		LandingEvent(Event)
-    elseif Event.id == world.event.S_EVENT_TAKEOFF then
-		--landing detected
-		TakeOffEvent(Event)
-		
-    end
+	end
 end
-
-
 
 
 world.addEventHandler(SupportHandler)
