@@ -1,12 +1,3 @@
-SupportHandler = EVENTHANDLER:New()
-EventHandlerKill = EVENTHANDLER:New():HandleEvent( EVENTS.Kill )
-EventHandlerBirth = EVENTHANDLER:New():HandleEvent( EVENTS.Birth )
-EventHandlerLand = EVENTHANDLER:New():HandleEvent( EVENTS.Land )
-EventHandlerTakeoff = EVENTHANDLER:New():HandleEvent( EVENTS.Takeoff )
-EventHandlerDead = EVENTHANDLER:New():HandleEvent( EVENTS.Dead )
-
-UnitNr = 1
-
 BlueCredits = 400
 RedCredits = 400
 
@@ -63,6 +54,13 @@ ActiveUnits = {}
 
 LogisticsTable = {}
 
+SupportHandler = EVENTHANDLER:New()
+EventHandlerKill = EVENTHANDLER:New():HandleEvent( EVENTS.Kill )
+EventHandlerBirth = EVENTHANDLER:New():HandleEvent( EVENTS.Birth )
+EventHandlerLand = EVENTHANDLER:New():HandleEvent( EVENTS.Land )
+EventHandlerTakeoff = EVENTHANDLER:New():HandleEvent( EVENTS.Takeoff )
+EventHandlerDead = EVENTHANDLER:New():HandleEvent( EVENTS.Dead )
+
 LogisticsClientSet = SET_CLIENT:New():FilterPrefixes("Transport"):FilterStart()
 GroundUnitsSet = SET_UNIT:New():FilterCategories("ground"):FilterStart()
 ClientSet = SET_CLIENT:New():FilterStart()
@@ -101,6 +99,9 @@ function SpawnHq(BlueHQ, RedHQ)
 			local HQSpawnBuilding = SPAWNSTATIC:NewFromType("ComCenter", "Structures", HQCountry)
 			local Zone = ZONE:FindByName( HQZone)
 			local HQBuilding = HQSpawnBuilding:SpawnFromZone(Zone, 0, HQName )
+
+			--local CommsTowerSpawnBuilding = SPAWNSTATIC:NewFromType("Comms tower M", "Structures", HQCountry):initCoordinate(Zone:GetCoordinate())
+			
 		end
 end
 
@@ -110,8 +111,7 @@ local MissionSchedule10Sec = SCHEDULER:New( nil,
   function()
 	--disabled for now
 	--ResupplyScheduleCheck()
-	SupplyCrateLoad(2)
-	--CreditCheck()
+	SupplyCrateLoad()
 	--CheckUnitsNearHQ()
   end, {}, 1, 10
   )
@@ -201,14 +201,12 @@ function SupplyCrateLoad()
 				local SupplyCrateCoords = SupplyCrate:GetCoordinate()
 				
 				ZoneCrate = ZONE_GROUP:New( SupplyCrateName, SupplyCrate, 50 )
-				ZoneCrate:FlareZone( FLARECOLOR.Red, 90, 60 )
 
 				LogisticsClientSet:ForEachClientInZone(ZoneCrate, function(client)
 					if (client ~= nil) and (client:IsAlive()) then 
 						if client:InAir() == false then
 							if LogisticsTable[client:Name()] == nil then
 								--pick up logistics crate
-								MessageAll = MESSAGE:New( client:Name(),  25):ToAll()
 								LogisticsTable[client:Name()] = "logistics"
 							else
 								MessageAll = MESSAGE:New( client:Name().. "heeft al een krat aan boord van type: "..LogisticsTable[client:Name()],  25):ToAll()
@@ -286,6 +284,9 @@ function SpawnUnitCheck(coord, coalition, text)
 		--awacs/jtac code invoegen
 	end
 end
+
+--unit sequencing
+UnitNr = 1
 
 function SpawnUnit(coord, coalition, text)
 	local SpawnUnitTemplate = ReturnCoalitionName(coalition).."_"..text
@@ -379,17 +380,24 @@ function EventHandlerTakeoff:OnEventTakeoff(Event)
 		local clientCost = ClientCost[clientType]
 		local clientLocation = Event.PlaceName
 		local airbaseCoalition = AIRBASE:FindByName(clientLocation):GetCoalition()
+		local clientLoadout = client:GetAmmo()
+
+		--begin om loadouts uit te lezen
+		--for index, data in ipairs(clientLoadout) do
+		--	env.info(index)
+		--	for k, v in pairs(data) do
+		--		env.info("ammo:"..k..": "..v)
+		--	end			
+		--end
 
 		if coalition == 1 and airbaseCoalition == 1 then
 			env.info("Credit Log: Red Credits: ".. RedCredits .. " Deducted: ".. clientCost)
 			RedCredits = RedCredits - clientCost
 			env.info("Credit Log: Red Credits: ".. RedCredits)
-			MessageAll = MESSAGE:New( "Takeoff from ".. clientLocation,  100):ToCoalition(coalition)
 		elseif coalition == 2  and airbaseCoalition == 2 then
 			env.info("Credit Log: Blue Credits: ".. BlueCredits .. " Deducted: ".. clientCost)
 			BlueCredits = BlueCredits - clientCost
 			env.info("Credit Log: Blue Credits: ".. BlueCredits)
-			MessageAll = MESSAGE:New( "Takeoff from ".. clientLocation,  100):ToCoalition(coalition)
 		end
 	end
 	
@@ -414,11 +422,7 @@ function EventHandlerLand:OnEventLand(Event)
 			BlueCredits = BlueCredits + clientCost
 			env.info("Credit Log: Blue Credits: ".. BlueCredits)
 		end
-		env.info("player in: ".. clientType .. " landed" )
-		--local location = Event.PlaceName
-
 	end
-	MessageAll = MESSAGE:New( "Landing",  100):ToAll()
 end
 
 function SupportHandler:onEvent(Event)
