@@ -68,6 +68,9 @@ ClientSet = SET_CLIENT:New():FilterStart()
 BlueHQ = math.random (17)
 RedHQ = math.random (17)
 
+--SSB
+trigger.action.setUserFlag("SSB",100)
+
 function showCredits(coalition)
 	env.info(coalition)
 	if coalition == 1 then 
@@ -315,9 +318,13 @@ function EventHandlerBirth:OnEventBirth(Event)
 		local initiator_type = Event.IniTypeName
 		local initiator_coalition = Event.IniCoalition
 		local initiator_cost = ClientCost[initiator_type]
+		local initiator_DcsGroupName = Event.IniGroupName
 		if initiator_coalition == 1 then
 			if initiator_cost > RedCredits then
 				MessageAll = MESSAGE:New( "Te weinig credits voor dit vliegtuig",  25):ToCoalition(initiator_coalition)
+				---SSB Kick on not enough Credits
+				trigger.action.setUserFlag(initiator_DcsGroupName,100)
+				trigger.action.setUserFlag(initiator_DcsGroupName,0)
 			else
 				env.info("Credit Log: Red Credits: ".. RedCredits)
 			end
@@ -326,6 +333,9 @@ function EventHandlerBirth:OnEventBirth(Event)
 				MessageAll = MESSAGE:New( "Te weinig credits voor dit vliegtuig",  25):ToCoalition(initiator_coalition)
 			else
 				env.info("Credit Log: Blue Credits: ".. BlueCredits)
+				---SSB Kick on not enough Credits
+				trigger.action.setUserFlag(initiator_DcsGroupName,100)
+				trigger.action.setUserFlag(initiator_DcsGroupName,0)
 			end
 		end
 		env.info("Credit Log: New Player: " .. initiator .. ", Type: ".. initiator_type.. ", Cost: ".. initiator_cost.. ", Coalition: ".. initiator_coalition)
