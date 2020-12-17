@@ -1,5 +1,5 @@
-BlueCredits = 400
-RedCredits = 400
+BlueCredits = 200
+RedCredits = 200
 
 CreditsUnknownUnit = 1
 
@@ -7,17 +7,18 @@ BlueSpawnZoneName = "spawnzoneblue"
 RedSpawnZoneName = "spawnzonered"
 
 SpawnTimerLimit = 900
+HintTimer = 1800
 
 Samresupplytimer = 6000
 
 UnitTable = {}
 
-UnitTable["tank"] = 10		-- MBT
-UnitTable["artillery"] = 10	-- Artillery
-UnitTable["aaa"] = 10		-- aaa 
-UnitTable["samsr"] = 20 	-- short range Sa-6 / Hawk
-UnitTable["sampd"] = 20		-- sam-point defence Sa-15 / Roland
-UnitTable["samlr"] = 40 	-- long range S300 / Patriot
+UnitTable["tank"] = 2		-- MBT
+UnitTable["artillery"] = 3	-- Artillery
+UnitTable["aaa"] = 4		-- aaa 
+UnitTable["samsr"] = 10 	-- short range Sa-6 / Hawk
+UnitTable["sampd"] = 10		-- sam-point defence Sa-15 / Roland
+UnitTable["samlr"] = 20 	-- long range S300 / Patriot
 
 ClientCost = {}
 
@@ -67,6 +68,7 @@ ClientSet = SET_CLIENT:New():FilterStart()
 
 BlueHQ = math.random (17)
 RedHQ = math.random (17)
+HintActivation = false
 
 --SSB
 trigger.action.setUserFlag("SSB",100)
@@ -80,9 +82,10 @@ function showCredits(coalition)
 	end
 end
 
+
 --Menu Stuff
-local MenuCoalitionRed = MENU_COALITION:New( coalition.side.RED, "Manage Credits" )
-local MenuCoalitionBlue = MENU_COALITION:New( coalition.side.BLUE, "Manage Credits" )
+local MenuCoalitionRed = MENU_COALITION:New( coalition.side.RED, "Manage Arena" )
+local MenuCoalitionBlue = MENU_COALITION:New( coalition.side.BLUE, "Manage Arena" )
 local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "Show Available Credits", MenuCoalitionBlue, showCredits, 2 )
 local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.RED, "Show Available Credits", MenuCoalitionRed, showCredits, 1 )
 
@@ -110,12 +113,16 @@ end
 
 SpawnHq(BlueHQ, RedHQ)
 
+--------------
+--Schedulars--
+--------------
 local MissionSchedule10Sec = SCHEDULER:New( nil, 
   function()
 	--disabled for now
 	--ResupplyScheduleCheck()
 	SupplyCrateLoad()
 	--CheckUnitsNearHQ()
+	BaseHintCheck()
   end, {}, 1, 10
   )
 
@@ -131,6 +138,32 @@ function StatusUpdate()
 	MessageAll = MESSAGE:New( "Credits Blue: "..BlueCredits,  25):ToAll()
 end
 
+function BaseHintCheck()
+	MissionTimer = timer.getAbsTime() - env.mission.start_time
+	if (MissionTimer > HintTimer) and HintActivation == false then
+		local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "Show Hint", MenuCoalitionBlue, BaseHint, 2 )
+		local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.RED, "Show Hint", MenuCoalitionRed, BaseHint, 1 )
+		HintActivation = true
+	end
+end
+
+function BaseHint(coalition)
+	if coalition == 1 then
+		local HQName = "Blue HQ"
+		local HQObjCoord = STATIC:FindByName(HQName):GetCoordinate():ToStringMGRS()
+		local hint_a = string.sub(HQObjCoord, 10,-13)
+		local hint_b = string.sub(HQObjCoord, 13,-11)
+		local hint_c = string.sub(HQObjCoord, 19,-5)
+		MessageAll = MESSAGE:New( "Enemy base located in sector "..hint_a..hint_b..hint_c,  25):ToCoalition(coalition)
+	elseif coalition == 2 then 
+		local HQName = "Red HQ"
+		local HQObjCoord = STATIC:FindByName(HQName):GetCoordinate():ToStringMGRS()
+		local hint_a = string.sub(HQObjCoord, 10,-13)
+		local hint_b = string.sub(HQObjCoord, 13,-11)
+		local hint_c = string.sub(HQObjCoord, 19,-5)
+		MessageAll = MESSAGE:New( "Enemy base located in sector "..hint_a..hint_b..hint_c,  25):ToCoalition(coalition)
+	end
+end
 
 function CheckUnitsNearHQ()
 	for i = 1, 2, 1
@@ -319,26 +352,27 @@ function EventHandlerBirth:OnEventBirth(Event)
 		local initiator_coalition = Event.IniCoalition
 		local initiator_cost = ClientCost[initiator_type]
 		local initiator_DcsGroupName = Event.IniGroupName
+		
 		if initiator_coalition == 1 then
 			if initiator_cost > RedCredits then
 				MessageAll = MESSAGE:New( "Te weinig credits voor dit vliegtuig",  25):ToCoalition(initiator_coalition)
 				---SSB Kick on not enough Credits
 				trigger.action.setUserFlag(initiator_DcsGroupName,100)
-				trigger.action.setUserFlag(initiator_DcsGroupName,0)
 			else
 				env.info("Credit Log: Red Credits: ".. RedCredits)
+				env.info("Credit Log: New Player: " .. initiator .. ", Type: ".. initiator_type.. ", Cost: ".. initiator_cost.. ", Coalition: ".. initiator_coalition)
 			end
 		elseif initiator_coalition ==2 then
 			if initiator_cost > BlueCredits then
 				MessageAll = MESSAGE:New( "Te weinig credits voor dit vliegtuig",  25):ToCoalition(initiator_coalition)
-			else
-				env.info("Credit Log: Blue Credits: ".. BlueCredits)
 				---SSB Kick on not enough Credits
-				trigger.action.setUserFlag(initiator_DcsGroupName,100)
-				trigger.action.setUserFlag(initiator_DcsGroupName,0)
+				env.info("group" .. initiator_DcsGroupName)
+			else
+				env.info("Credit Log: Blue Credits: ".. BlueCredits)			
+				env.info("Credit Log: New Player: " .. initiator .. ", Type: ".. initiator_type.. ", Cost: ".. initiator_cost.. ", Coalition: ".. initiator_coalition)
 			end
 		end
-		env.info("Credit Log: New Player: " .. initiator .. ", Type: ".. initiator_type.. ", Cost: ".. initiator_cost.. ", Coalition: ".. initiator_coalition)
+		
 	end
 end
 
