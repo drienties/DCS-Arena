@@ -1,15 +1,34 @@
+-------------------------------
+--User setings
+-------------------------------
+
+--starting credits
 BlueCredits = 200
 RedCredits = 200
 
+--Credits undefined units are worth when killed
 CreditsUnknownUnit = 1
 
+--Name of zone in where unit placement is allowed
 BlueSpawnZoneName = "spawnzoneblue"
 RedSpawnZoneName = "spawnzonered"
 
+--number of HQ zones defined in the editor
+RedHQZones = 17
+BlueHQZones = 17
+
+--Time to instantly place units at start
 SpawnTimerLimit = 900
+
+--Time until hint of location for the enemy HQ is given
 HintTimer = 1800
 
+--no longer used sam ressuply timer t.b.r
 Samresupplytimer = 6000
+
+--------------------------------
+--Don'change anything below here
+--------------------------------
 
 UnitTable = {}
 
@@ -66,11 +85,14 @@ LogisticsClientSet = SET_CLIENT:New():FilterPrefixes("Transport"):FilterStart()
 GroundUnitsSet = SET_UNIT:New():FilterCategories("ground"):FilterStart()
 ClientSet = SET_CLIENT:New():FilterStart()
 
-BlueHQ = math.random (17)
-RedHQ = math.random (17)
+--Number of HQ Zones
+BlueHQ = math.random (BlueHQZones)
+RedHQ = math.random (RedHQZones)
+
+--Set Hint Flag to false to start
 HintActivation = false
 
---SSB
+--SSB activation
 trigger.action.setUserFlag("SSB",100)
 
 function showCredits(coalition)
@@ -116,9 +138,10 @@ SpawnHq(BlueHQ, RedHQ)
 --------------
 --Schedulars--
 --------------
+
+--10Sec Schedular
 local MissionSchedule10Sec = SCHEDULER:New( nil, 
   function()
-	--disabled for now
 	--ResupplyScheduleCheck()
 	SupplyCrateLoad()
 	--CheckUnitsNearHQ()
@@ -126,18 +149,21 @@ local MissionSchedule10Sec = SCHEDULER:New( nil,
   end, {}, 1, 10
   )
 
+--10Min Schedular
 local MissionSchedule10Min = SCHEDULER:New( nil, 
   function()
 	StatusUpdate()
   end, {}, 1, 600
   )
 
+--function to give periodic updates on available credit on both sides
 function StatusUpdate()
 	MessageAll = MESSAGE:New( "Status Update:", 25):ToAll()
 	MessageAll = MESSAGE:New( "Credits Red: "..RedCredits,  25):ToAll()
 	MessageAll = MESSAGE:New( "Credits Blue: "..BlueCredits,  25):ToAll()
 end
 
+--function to add "Hint" intel menu after HintTimer has expired
 function BaseHintCheck()
 	MissionTimer = timer.getAbsTime() - env.mission.start_time
 	if (MissionTimer > HintTimer) and HintActivation == false then
@@ -147,6 +173,7 @@ function BaseHintCheck()
 	end
 end
 
+--function to get the grid reference for the enemy base
 function BaseHint(coalition)
 	if coalition == 1 then
 		local HQName = "Blue HQ"
@@ -165,6 +192,7 @@ function BaseHint(coalition)
 	end
 end
 
+--Function to check if there are still units near HQ within set radius
 function CheckUnitsNearHQ()
 	for i = 1, 2, 1
 		do
