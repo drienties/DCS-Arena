@@ -339,7 +339,8 @@ function SpawnUnitCheck(coord, coalition, text)
 						env.info("Credit Log: ".. ReturnCoalitionName(coalition) .." Credits over: ".. Credits)
 					end
 				else
-					MessageAll = MESSAGE:New( "Ongeldige Unit!",  25):ToCoalition(coalition)
+					--MessageAll = MESSAGE:New( "Ongeldige Unit!",  25):ToCoalition(coalition)
+					--not in table i.e. no valid unit
 				end
 			else
 				MessageAll = MESSAGE:New( "Instant spawn placement timer expired!",  25):ToCoalition(coalition)
