@@ -17,8 +17,8 @@ RedSpawnZoneName = "spawnzonered"
 RedHQZones = 17
 BlueHQZones = 17
 
---Time to instantly place units at start
-SpawnTimerLimit = 900
+--Time to instantly place units at start/takeoff timer
+SpawnTimerLimit = 90
 
 --Time until hint of location for the enemy HQ is given
 HintTimer = 1800
@@ -104,6 +104,7 @@ function showCredits(coalition)
 	end
 end
 
+local AudioCue = USERSOUND:New( "TransmisionEntrante.ogg" )
 
 --Menu Stuff
 local MenuCoalitionRed = MENU_COALITION:New( coalition.side.RED, "Mission Options" )
@@ -125,11 +126,15 @@ function SpawnHq(BlueHQ, RedHQ)
 			end
 			
 			local HQSpawnBuilding = SPAWNSTATIC:NewFromType("ComCenter", "Structures", HQCountry)
+			local HQCommsTowerSpawnBuilding = SPAWNSTATIC:NewFromType("Comms tower M", "Structures", HQCountry)
+			local HQTent = SPAWNSTATIC:NewFromType("FARP Tent", "Structures", HQCountry)
 			local Zone = ZONE:FindByName( HQZone)
-			local HQBuilding = HQSpawnBuilding:SpawnFromZone(Zone, 0, HQName )
+			HQSpawnBuilding:SpawnFromZone(Zone, 0, HQName )
 
-			--local CommsTowerSpawnBuilding = SPAWNSTATIC:NewFromType("Comms tower M", "Structures", HQCountry):initCoordinate(Zone:GetCoordinate())
-			
+			local x = Zone:GetPointVec2():GetLat()
+	  		local y = Zone:GetPointVec2():GetLon()
+			HQCommsTowerSpawnBuilding:SpawnFromPointVec2( POINT_VEC2:New( x+100, y ), 90 )
+			HQTent:SpawnFromPointVec2( POINT_VEC2:New( x, y-50 ), 70 )
 		end
 end
 
@@ -146,6 +151,7 @@ local MissionSchedule10Sec = SCHEDULER:New( nil,
 	SupplyCrateLoad()
 	--CheckUnitsNearHQ()
 	BaseHintCheck()
+	StartCheck()
   end, {}, 1, 10
   )
 
@@ -155,6 +161,21 @@ local MissionSchedule10Min = SCHEDULER:New( nil,
 	StatusUpdate()
   end, {}, 1, 600
   )
+
+--function to check mission start timer
+StartSignal = false
+function StartCheck()
+	local TimeRemaining =  math.floor((SpawnTimerLimit - MissionTimer), 0.5)
+	if StartSignal == false then
+		if (MissionTimer > SpawnTimerLimit) then
+			MessageAll = MESSAGE:New( "Mission is a Go!, Cleared for Takeoff!", 25):ToAll()
+			StartSignal = true
+		else
+			MessageAll = MESSAGE:New( TimeRemaining.. " Seconds untill mission start, do not takeoff!", 9):ToAll()
+		end
+	end
+end
+
 
 --function to give periodic updates on available credit on both sides
 function StatusUpdate()
@@ -167,7 +188,7 @@ end
 function BaseHintCheck()
 	MissionTimer = timer.getAbsTime() - env.mission.start_time
 	if (MissionTimer > HintTimer) and HintActivation == false then
-		local AudioCue = USERSOUND:New( "TransmisionEntrante.ogg" )
+		
 		AudioCue:ToAll()
 		MessageAll = MESSAGE:New( "Intel received regarding the enemy base(check the Mission Options menu)", 25):ToAll()		
 		local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "Show Hint", MenuCoalitionBlue, BaseHint, 2 )
@@ -384,7 +405,11 @@ function EventHandlerBirth:OnEventBirth(Event)
 		local initiator_coalition = Event.IniCoalition
 		local initiator_cost = ClientCost[initiator_type]
 		local initiator_DcsGroupName = Event.IniGroupName
-		
+		if MissionTimer < SpawnTimerLimit then
+			local TimeRemaining =  math.floor((SpawnTimerLimit - MissionTimer), 0.5)
+			MessageAll = MESSAGE:New( "Warning: Mission Start time has not been reached. do not takeoff!", 25):ToAll()
+			MessageAll = MESSAGE:New( "Warning: ".. TimeRemaining .." Seconds remaining!", 25):ToAll()
+		end
 		if initiator_coalition == 1 then
 			if initiator_cost > RedCredits then
 				MessageAll = MESSAGE:New( "Te weinig credits voor dit vliegtuig",  25):ToCoalition(initiator_coalition)
@@ -457,6 +482,12 @@ function EventHandlerTakeoff:OnEventTakeoff(Event)
 		local clientLocation = Event.PlaceName
 		local airbaseCoalition = AIRBASE:FindByName(clientLocation):GetCoalition()
 		local clientLoadout = client:GetAmmo()
+
+		--check time before takeoff
+		if MissionTimer < SpawnTimerLimit then
+			client:Explode(100)
+			MessageAll = MESSAGE:New( "Boom!", 25):ToAll()
+		end
 
 		--begin om loadouts uit te lezen
 		--for index, data in ipairs(clientLoadout) do
