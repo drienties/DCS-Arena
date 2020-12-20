@@ -106,8 +106,8 @@ end
 
 
 --Menu Stuff
-local MenuCoalitionRed = MENU_COALITION:New( coalition.side.RED, "Manage Arena" )
-local MenuCoalitionBlue = MENU_COALITION:New( coalition.side.BLUE, "Manage Arena" )
+local MenuCoalitionRed = MENU_COALITION:New( coalition.side.RED, "Mission Options" )
+local MenuCoalitionBlue = MENU_COALITION:New( coalition.side.BLUE, "Mission Options" )
 local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "Show Available Credits", MenuCoalitionBlue, showCredits, 2 )
 local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.RED, "Show Available Credits", MenuCoalitionRed, showCredits, 1 )
 
@@ -167,6 +167,9 @@ end
 function BaseHintCheck()
 	MissionTimer = timer.getAbsTime() - env.mission.start_time
 	if (MissionTimer > HintTimer) and HintActivation == false then
+		local AudioCue = USERSOUND:New( "TransmisionEntrante.ogg" )
+		AudioCue:ToAll()
+		MessageAll = MESSAGE:New( "Intel received regarding the enemy base(check the Mission Options menu)", 25):ToAll()		
 		local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "Show Hint", MenuCoalitionBlue, BaseHint, 2 )
 		local MenuAdd = MENU_COALITION_COMMAND:New( coalition.side.RED, "Show Hint", MenuCoalitionRed, BaseHint, 1 )
 		HintActivation = true
