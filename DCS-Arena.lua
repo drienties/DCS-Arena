@@ -216,7 +216,7 @@ function BaseHint(coalition)
 	end
 end
 
---Function to check if there are still units near HQ within set radius
+--Function to check if there are still units near HQ within set radius (not working correctly / WIP)
 function CheckUnitsNearHQ()
 	for i = 1, 2, 1
 		do
@@ -309,6 +309,7 @@ function SupplyCrateLoad()
 
 end
 
+--Function to return coalition name
 function ReturnCoalitionName(coalition)
  if coalition == 1 then
 	return "Red"
@@ -317,6 +318,7 @@ function ReturnCoalitionName(coalition)
  end
 end
 
+--check credits/zone/type/text before spawning
 function SpawnUnitCheck(coord, coalition, text)
 	Unitcost = UnitTable[text]
 	MissionTimer = timer.getAbsTime() - env.mission.start_time
@@ -326,8 +328,12 @@ function SpawnUnitCheck(coord, coalition, text)
 	elseif coalition ==2 then
 		SpawnZone = ZONE:FindByName( BlueSpawnZoneName )
 	end
+	if text == "active" then
+		--MarkerZone = ZONE:New("Marker", )
 
-	if text ~= "jtac" and text ~= "awacs" then
+		--local ActivateTask = StartUnit:StartUncontrolled
+		--StartUnit:PushTask(ActivateTask, 1)
+	elseif text ~= "jtac" and text ~= "awacs" then
 		if coord:IsInRadius(SpawnZone:GetCoordinate(), SpawnZone:GetRadius()) then
 			if MissionTimer < SpawnTimerLimit then
 				if Unitcost ~= nil then	
@@ -369,9 +375,18 @@ function SpawnUnitCheck(coord, coalition, text)
 		else
 			MessageAll = MESSAGE:New( "Units in eigen zone plaatsen!",  25):ToCoalition(coalition)
 		end
-	else
+	elseif text == "jtac" then
 		--awacs/jtac code invoegen
+	elseif text == "awacs" then
+		local UnitName = ReturnCoalitionName(coalition).."_"..text
+		StartUnit = GROUP:FindByName(UnitName)
+		local ActivateTask = StartUnit:StartUncontrolled(1)
+		local OrbitTask = StartUnit:TaskOrbitCircleAtVec2(coord:GetVec2(), 7500, 128)
+		
+		StartUnit:SetTask(ActivateTask, 1)
+		--StartUnit:SetTask(OrbitTask, 1)
 	end
+
 end
 
 --unit sequencing
